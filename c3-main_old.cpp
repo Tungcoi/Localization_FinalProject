@@ -1,16 +1,3 @@
-
-#include <carla/client/Client.h>
-#include <carla/client/ActorBlueprint.h>
-#include <carla/client/BlueprintLibrary.h>
-#include <carla/client/Map.h>
-#include <carla/geom/Location.h>
-#include <carla/geom/Transform.h>
-#include <carla/client/Sensor.h>
-#include <carla/sensor/data/LidarMeasurement.h>
-#include <thread>
-
-#include <carla/client/Vehicle.h>
-
 //pcl code
 //#include "render/render.h"
 
@@ -205,6 +192,13 @@ int main(){
 	typename pcl::PointCloud<PointT>::Ptr cloudFiltered (new pcl::PointCloud<PointT>);
 	typename pcl::PointCloud<PointT>::Ptr scanCloud (new pcl::PointCloud<PointT>);
 
+	pcl::NormalDistributionsTransform<PointT, PointT> ndt;
+    ndt.setTransformationEpsilon(0.01);
+    ndt.setStepSize(0.1);
+    ndt.setResolution(1.0);
+    ndt.setInputTarget(mapCloud);
+
+
 	lidar->Listen([&new_scan, &lastScanTime, &scanCloud](auto data){
 
 		if(new_scan){
@@ -255,7 +249,7 @@ int main(){
 			vehicle->ApplyControl(control);
 		}
 
-  		viewer->spinOnce ();
+  		viewer->spinOnce();
 		
 		if(!new_scan){
 			
@@ -270,12 +264,12 @@ int main(){
 			//pose = ....
 			// Tính toán ma trận biến đổi giữa đám mây điểm đã lọc và bản đồ
 			Eigen::Matrix4d transformMatrix;
-			if (USE_ICP) {
-				transformMatrix = ICP(mapCloud, cloudFiltered, pose, kMaximumIterationsICP);
-			} else {
-				transformMatrix = NDT(ndt, cloudFiltered, pose, kMaximumIterationsNDT);
-			}
-			pose = getPose(transformMatrix); // Cập nhật vị trí của xe
+            if (USE_ICP) {
+                transformMatrix = ICP(mapCloud, cloudFiltered, pose, 50);
+            } else {
+                transformMatrix = NDT(ndt, cloudFiltered, pose, 50);
+            }
+            pose = getPose(transformMatrix); // Cập nhật vị trí của xe
 			// TODO: Transform scan so it aligns with ego's actual pose and render that scan
 
 			// TODO: Change `scanCloud` below to your transformed scan
