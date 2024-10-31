@@ -23,6 +23,16 @@ using namespace std::string_literals;
 
 using namespace std;
 
+#include <carla/client/Client.h>
+#include <carla/client/ActorBlueprint.h>
+#include <carla/client/BlueprintLibrary.h>
+#include <carla/client/Map.h>
+#include <carla/geom/Location.h>
+#include <carla/geom/Transform.h>
+#include <carla/client/Sensor.h>
+#include <carla/sensor/data/LidarMeasurement.h>
+#include <carla/client/Vehicle.h>
+
 #include <string>
 #include <pcl/io/pcd_io.h>
 #include <pcl/visualization/pcl_visualizer.h>
@@ -41,6 +51,7 @@ std::chrono::time_point<std::chrono::system_clock> currentTime;
 vector<ControlState> cs;
 
 bool refresh_view = false;
+const bool USE_ICP = true; 
 void keyboardEventOccurred(const pcl::visualization::KeyboardEvent &event, void* viewer)
 {
 
@@ -88,6 +99,53 @@ void Accuate(ControlState response, cc::Vehicle::Control& state){
 	state.brake = response.b;
 }
 
+
+// Hàm xử lý ICP
+Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose startingPose, int iterations) {
+    Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity();
+    Eigen::Matrix4d starting_pose_transform = transform3D(
+        startingPose.rotation.yaw, startingPose.rotation.pitch, startingPose.rotation.roll,
+        startingPose.position.x, startingPose.position.y, startingPose.position.z
+    );
+    PointCloudT::Ptr source_transformed(new PointCloudT);
+    pcl::transformPointCloud(*source, *source_transformed, starting_pose_transform);
+
+    pcl::IterativeClosestPoint<PointT, PointT> icp;
+    icp.setInputSource(source_transformed);
+    icp.setInputTarget(target);
+    icp.setMaxCorrespondenceDistance(5.0);
+    icp.setMaximumIterations(iterations);
+    icp.setTransformationEpsilon(1e-4);
+    icp.setEuclideanFitnessEpsilon(0.2);
+
+    PointCloudT::Ptr cloud_icp(new PointCloudT);
+    icp.align(*cloud_icp);
+    if (icp.hasConverged()) {
+        transformation_matrix = icp.getFinalTransformation().cast<double>();
+        transformation_matrix = transformation_matrix * starting_pose_transform;
+    }
+    return transformation_matrix;
+}
+
+// Hàm xử lý NDT
+Eigen::Matrix4d NDT(pcl::NormalDistributionsTransform<PointT, PointT>& ndt, PointCloudT::Ptr source, Pose startingPose, int iterations) {
+    Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity();
+    Eigen::Matrix4f init_guess = transform3D(
+        startingPose.rotation.yaw, startingPose.rotation.pitch, startingPose.rotation.roll,
+        startingPose.position.x, startingPose.position.y, startingPose.position.z
+    ).cast<float>();
+
+    ndt.setMaximumIterations(iterations);
+    ndt.setInputSource(source);
+    PointCloudT::Ptr output_cloud(new PointCloudT);
+    ndt.align(*output_cloud, init_guess);
+
+    if (ndt.hasConverged()) {
+        transformation_matrix = ndt.getFinalTransformation().cast<double>();
+    }
+    return transformation_matrix;
+}
+
 void drawCar(Pose pose, int num, Color color, double alpha, pcl::visualization::PCLVisualizer::Ptr& viewer){
 
 	BoxQ box;
@@ -98,6 +156,8 @@ void drawCar(Pose pose, int num, Color color, double alpha, pcl::visualization::
     box.cube_height = 2;
 	renderBox(viewer, box, num, color, alpha);
 }
+
+
 
 int main(){
 
@@ -201,15 +261,29 @@ int main(){
 			
 			new_scan = true;
 			// TODO: (Filter scan using voxel filter)
+			pcl::VoxelGrid<PointT> voxelGrid;
+			voxelGrid.setInputCloud(scanCloud);
+			voxelGrid.setLeafSize(0.5f, 0.5f, 0.5f);
+			voxelGrid.filter(*cloudFiltered);
 
 			// TODO: Find pose transform by using ICP or NDT matching
 			//pose = ....
-
+			// Tính toán ma trận biến đổi giữa đám mây điểm đã lọc và bản đồ
+			Eigen::Matrix4d transformMatrix;
+			if (USE_ICP) {
+				transformMatrix = ICP(mapCloud, cloudFiltered, pose, kMaximumIterationsICP);
+			} else {
+				transformMatrix = NDT(ndt, cloudFiltered, pose, kMaximumIterationsNDT);
+			}
+			pose = getPose(transformMatrix); // Cập nhật vị trí của xe
 			// TODO: Transform scan so it aligns with ego's actual pose and render that scan
 
-			viewer->removePointCloud("scan");
 			// TODO: Change `scanCloud` below to your transformed scan
-			renderPointCloud(viewer, scanCloud, "scan", Color(1,0,0) );
+			// Biến đổi và hiển thị đám mây điểm căn chỉnh
+			PointCloudT::Ptr alignedCloud(new PointCloudT);
+			pcl::transformPointCloud(*cloudFiltered, *alignedCloud, transformMatrix);
+			viewer->removePointCloud("scan");
+			renderPointCloud(viewer, alignedCloud, "scan", Color(1, 0, 0));
 
 			viewer->removeAllShapes();
 			drawCar(pose, 1,  Color(0,1,0), 0.35, viewer);
