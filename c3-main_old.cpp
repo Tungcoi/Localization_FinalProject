@@ -1,3 +1,16 @@
+
+#include <carla/client/Client.h>
+#include <carla/client/ActorBlueprint.h>
+#include <carla/client/BlueprintLibrary.h>
+#include <carla/client/Map.h>
+#include <carla/geom/Location.h>
+#include <carla/geom/Transform.h>
+#include <carla/client/Sensor.h>
+#include <carla/sensor/data/LidarMeasurement.h>
+#include <thread>
+
+#include <carla/client/Vehicle.h>
+
 //pcl code
 //#include "render/render.h"
 
@@ -9,16 +22,6 @@ using namespace std::chrono_literals;
 using namespace std::string_literals;
 
 using namespace std;
-
-#include <carla/client/Client.h>
-#include <carla/client/ActorBlueprint.h>
-#include <carla/client/BlueprintLibrary.h>
-#include <carla/client/Map.h>
-#include <carla/geom/Location.h>
-#include <carla/geom/Transform.h>
-#include <carla/client/Sensor.h>
-#include <carla/sensor/data/LidarMeasurement.h>
-#include <carla/client/Vehicle.h>
 
 #include <string>
 #include <pcl/io/pcd_io.h>
@@ -143,8 +146,6 @@ void drawCar(Pose pose, int num, Color color, double alpha, pcl::visualization::
     box.cube_height = 2;
 	renderBox(viewer, box, num, color, alpha);
 }
-
-
 
 int main(){
 
