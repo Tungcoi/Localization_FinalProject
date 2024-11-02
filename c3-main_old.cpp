@@ -117,12 +117,11 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
         icp.setEuclideanFitnessEpsilon(0.2);
     }
 
+    PointCloudT::Ptr cloud_icp(new PointCloudT);
+    icp.align(*cloud_icp);
     std::cout << "Finished ICP alignment in " << time.toc() << " ms" << "\n";
     std::cout << "ICP converged: " << std::boolalpha << icp.hasConverged();
     std::cout << ", Fitness score: " << icp.getFitnessScore() << "\n";
-
-    PointCloudT::Ptr cloud_icp(new PointCloudT);
-    icp.align(*cloud_icp);
     if (icp.hasConverged()) {
         transformation_matrix = icp.getFinalTransformation().cast<double>();
         transformation_matrix = transformation_matrix * starting_pose_transform;
