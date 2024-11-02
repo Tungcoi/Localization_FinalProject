@@ -140,6 +140,12 @@ int main(){
 	Pose pose(Point(0,0,0), Rotate(0,0,0));
 	Pose poseRef(Point(vehicle->GetTransform().location.x, vehicle->GetTransform().location.y, vehicle->GetTransform().location.z), Rotate(vehicle->GetTransform().rotation.yaw * pi/180, vehicle->GetTransform().rotation.pitch * pi/180, vehicle->GetTransform().rotation.roll * pi/180));
 
+	// Load map
+	PointCloudT::Ptr mapCloud(new PointCloudT);
+  	pcl::io::loadPCDFile("map.pcd", *mapCloud);
+  	cout << "Loaded " << mapCloud->points.size() << " data points from map.pcd" << endl;
+	renderPointCloud(viewer, mapCloud, "map", Color(0,0,1)); 
+
 	lidar->Listen([&new_scan, &lastScanTime, &pose, &viewer](auto data){
 
 		if(new_scan){
@@ -162,7 +168,7 @@ int main(){
 			PointCloudT::Ptr scanCloud(new PointCloudT);
 			*scanCloud = pclCloud;
 			viewer->removeAllPointClouds();
-			renderPointCloud(viewer, scanCloud, "map", Color(0,0,1)); 
+			renderPointCloud(viewer, scanCloud, "map", Color(1,0,0)); 
 			
 		}
 
