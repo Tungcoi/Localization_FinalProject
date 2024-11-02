@@ -42,7 +42,7 @@ vector<ControlState> cs;
 
 bool refresh_view = false;
 const bool USE_ICP = true;
-const bool USE_SAMPLE = false;
+const bool USE_SAMPLE = true;
 void keyboardEventOccurred(const pcl::visualization::KeyboardEvent &event, void* viewer)
 {
 
@@ -217,7 +217,7 @@ int main(){
     typename pcl::PointCloud<PointT>::Ptr scanCloud (new pcl::PointCloud<PointT>);
 
     pcl::NormalDistributionsTransform<PointT, PointT> ndt;
-    if USE_SAMPLE
+    if (USE_SAMPLE)
         ndt.setTransformationEpsilon(1e-4);
     else
         ndt.setTransformationEpsilon(0.01);
@@ -294,11 +294,11 @@ int main(){
             int maxIteration = 50;
 
             if (USE_ICP) {
-                if USE_SAMPLE
+                if (USE_SAMPLE)
                     maxIteration = 120;
                 transformMatrix = ICP(mapCloud, cloudFiltered, pose, maxIteration);
             } else {
-                if USE_SAMPLE
+                if (USE_SAMPLE)
                     maxIteration = 95;
                 transformMatrix = NDT(ndt, cloudFiltered, pose, maxIteration);
             }
