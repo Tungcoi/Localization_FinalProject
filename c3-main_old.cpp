@@ -302,6 +302,9 @@ int main(){
                 transformMatrix = NDT(ndt, cloudFiltered, pose, maxIteration);
             }
             pose = getPose(transformMatrix); // Cập nhật vị trí của xe
+            cout<<"pose updated"<<endl;
+            pose.Print();
+            truePose.Print();
             // TODO: Transform scan so it aligns with ego's actual pose and render that scan
 
             // TODO: Change `scanCloud` below to your transformed scan

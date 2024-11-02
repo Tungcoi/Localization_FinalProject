@@ -55,6 +55,13 @@ struct Pose{
         Pose result(Point(position.x-p.position.x, position.y-p.position.y, position.z-p.position.z), Rotate(rotation.yaw-p.rotation.yaw, rotation.pitch-p.rotation.pitch, rotation.roll-p.rotation.roll) );
         return result;
     }
+
+	void Print(){
+		cout<<"----------- POSE -----------"<<endl;
+		position.Print();
+		rotation.Print();
+		cout<<"----------- END_POSE -----------"<<endl;
+	}
 };
 
 struct ControlState{
