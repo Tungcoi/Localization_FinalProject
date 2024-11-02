@@ -123,7 +123,9 @@ int main(){
 	lidar_bp.SetAttribute("points_per_second", "500000");
 
 	auto user_offset = cg::Location(0, 0, 0);
-	auto lidar_transform = cg::Transform(cg::Location(-0.5, 0, 1.8) + user_offset);
+	int lidar_yaw_correction = 90; // Thử giá trị 90 hoặc -90
+	auto lidar_transform = cg::Transform(cg::Location(-0.5, 0, 1.8) + user_offset, cg::Rotation(0, 0, lidar_yaw_correction));
+	// auto lidar_transform = cg::Transform(cg::Location(-0.5, 0, 1.8) + user_offset);
 	auto lidar_actor = world.SpawnActor(lidar_bp, lidar_transform, ego_actor.get());
 	auto lidar = boost::static_pointer_cast<cc::Sensor>(lidar_actor);
 	bool new_scan = true;
