@@ -154,34 +154,6 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
     return transformation_matrix;
 }
 
-
-Eigen::Matrix4d ICP2(pcl::PointCloud<PointT>::Ptr target, pcl::PointCloud<PointT>::Ptr source, Pose startPose, int iterations)
-{
-	Eigen::Matrix4d initTransform = transform3D(startPose.rotation.yaw, startPose.rotation.pitch, startPose.rotation.roll, startPose.position.x,
-												startPose.position.y, startPose.position.z);
-	PointCloudT::Ptr transform_source(new PointCloudT);
-	pcl::transformPointCloud(*source, *transform_source, initTransform);
-
-	pcl::IterativeClosestPoint<PointT, PointT> icp;
-	icp.setInputSource(transform_source);
-	icp.setInputTarget(target);
-	icp.setMaximumIterations(iterations);
-	icp.setMaxCorrespondenceDistance(2);
-
-	PointCloudT::Ptr cloud_icp(new PointCloudT);
-	icp.align(*cloud_icp);
-
-	Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity(4, 4);
-
-	if(icp.hasConverged()){
-      transformation_matrix = icp.getFinalTransformation().cast<double>();
-      transformation_matrix = transformation_matrix * initTransform;}
-	else{
-      cout << "warning! ICP has not converged!" << endl;}
-	
-	return transformation_matrix;
-}
-
 // Hàm xử lý NDT
 Eigen::Matrix4d NDT(pcl::NormalDistributionsTransform<PointT, PointT>& ndt, PointCloudT::Ptr source, Pose startingPose, int iterations) {
     pcl::console::TicToc time;
@@ -331,6 +303,25 @@ int main(){
 
         if(!new_scan){
 
+            // Tính toán độ chênh lệch ban đầu giữa pose khởi tạo và pose thực tế
+            double delta_x = pose.position.x - truePose.position.x;
+            double delta_y = pose.position.y - truePose.position.y;
+            double delta_z = pose.position.z - truePose.position.z;
+
+            // Tính khoảng cách Euclidean
+            double distance = sqrt(delta_x * delta_x + delta_y * delta_y + delta_z * delta_z);
+
+            // Tính sự chênh lệch về góc (yaw, pitch, roll)
+            double delta_yaw = pose.rotation.yaw - truePose.rotation.yaw;
+            double delta_pitch = pose.rotation.pitch - truePose.rotation.pitch;
+            double delta_roll = pose.rotation.roll - truePose.rotation.roll;
+
+            // Log các giá trị này để xem độ chênh lệch ban đầu
+            std::cout << "Initial pose vs Actual pose differences:" << std::endl;
+            std::cout << "Position difference: (" << delta_x << ", " << delta_y << ", " << delta_z << "), Euclidean distance: " << distance << std::endl;
+            std::cout << "Rotation difference: yaw = " << delta_yaw << ", pitch = " << delta_pitch << ", roll = " << delta_roll << std::endl;
+            
+            
             new_scan = true;
             // TODO: (Filter scan using voxel filter)
             std::cout << "Number of points before voxel filter: " << scanCloud->points.size() << std::endl;
