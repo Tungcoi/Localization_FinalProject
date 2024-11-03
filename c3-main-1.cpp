@@ -46,7 +46,7 @@ using namespace std;
 #include <pcl/registration/ndt.h>
 #include <pcl/console/time.h>   // TicToc
 
-#include "helper.h"
+#include "helper1.h"
 #include "scm.h"
 #include "ukf.h"
 
@@ -241,11 +241,11 @@ int main(int arg_cnt, char * arg_vec[]) {
 			for (auto detection : *scan){
 				if(
 					(
-						detection.point.x*detection.point.x + detection.point.y*detection.point.y + 
-						detection.point.z*detection.point.z
+						detection.x*detection.x + detection.y*detection.y + 
+						detection.z*detection.z
 					) > 8.0) {  // Don't include points touching ego
 					pclCloud.points.push_back(
-						PointT(detection.point.x, detection.point.y, detection.point.z)
+						PointT(detection.x, detection.y, detection.z)
 					);
 				}
 			}

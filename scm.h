@@ -22,7 +22,7 @@
 #include <pcl/console/time.h>   // TicToc
 #include <vector>
 
-#include "helper.h"
+#include "helper1.h"
 
 typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
