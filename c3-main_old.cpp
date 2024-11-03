@@ -204,7 +204,8 @@ int main(){
     viewer->registerKeyboardCallback(keyboardEventOccurred, (void*)&viewer);
 
     auto vehicle = boost::static_pointer_cast<cc::Vehicle>(ego_actor);
-    Pose pose(Point(0,0,0), Rotate(0,0,0));
+    // Pose pose(Point(0,0,0), Rotate(0,0,0));
+    Pose pose(Point(vehicle->GetTransform().location.x, vehicle->GetTransform().location.y, vehicle->GetTransform().location.z), Rotate(vehicle->GetTransform().rotation.yaw * pi/180, vehicle->GetTransform().rotation.pitch * pi/180, vehicle->GetTransform().rotation.roll * pi/180));
 
     // Load map
     PointCloudT::Ptr mapCloud(new PointCloudT);
@@ -292,6 +293,8 @@ int main(){
             Eigen::Matrix4d transformMatrix;
             int maxIteration = 50;
 
+            cout<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$d"<<endl;
+            pose.Print();
             if (USE_ICP) {
                 if (USE_SAMPLE)
                     maxIteration = 120;
@@ -302,9 +305,9 @@ int main(){
                 transformMatrix = NDT(ndt, cloudFiltered, pose, maxIteration);
             }
             pose = getPose(transformMatrix); // Cập nhật vị trí của xe
-            cout<<"pose updated"<<endl;
             pose.Print();
             truePose.Print();
+            cout<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$d"<<endl;
             // TODO: Transform scan so it aligns with ego's actual pose and render that scan
 
             // TODO: Change `scanCloud` below to your transformed scan
