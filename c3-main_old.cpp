@@ -42,7 +42,7 @@ vector<ControlState> cs;
 
 bool refresh_view = false;
 const bool USE_ICP = true;
-const bool USE_SAMPLE = true;
+const bool USE_SAMPLE = false;
 void keyboardEventOccurred(const pcl::visualization::KeyboardEvent &event, void* viewer)
 {
 
@@ -228,12 +228,12 @@ int main(){
     std::chrono::time_point<std::chrono::system_clock> lastScanTime, startTime;
 
     pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-      viewer->setBackgroundColor (0, 0, 0);
+    viewer->setBackgroundColor (0, 0, 0);
     viewer->registerKeyboardCallback(keyboardEventOccurred, (void*)&viewer);
 
     auto vehicle = boost::static_pointer_cast<cc::Vehicle>(ego_actor);
-    // Pose pose(Point(0,0,0), Rotate(0,0,0));
-    Pose pose(Point(vehicle->GetTransform().location.x, vehicle->GetTransform().location.y, vehicle->GetTransform().location.z), Rotate(vehicle->GetTransform().rotation.yaw * pi/180, vehicle->GetTransform().rotation.pitch * pi/180, vehicle->GetTransform().rotation.roll * pi/180));
+    Pose pose(Point(0,0,0), Rotate(0,0,0));
+    //Pose pose(Point(vehicle->GetTransform().location.x, vehicle->GetTransform().location.y, vehicle->GetTransform().location.z), Rotate(vehicle->GetTransform().rotation.yaw * pi/180, vehicle->GetTransform().rotation.pitch * pi/180, vehicle->GetTransform().rotation.roll * pi/180));
 
     // Load map
     PointCloudT::Ptr mapCloud(new PointCloudT);
@@ -326,8 +326,8 @@ int main(){
             pose.Print();
             if (USE_ICP) {
                 if (USE_SAMPLE)
-                    maxIteration = 100;// 120;
-                transformMatrix = ICP2(mapCloud, cloudFiltered, pose, maxIteration);
+                    maxIteration = 120;
+                transformMatrix = ICP(mapCloud, cloudFiltered, pose, maxIteration);
             } else {
                 if (USE_SAMPLE)
                     maxIteration = 95;
