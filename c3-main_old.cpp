@@ -113,21 +113,20 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
     pcl::IterativeClosestPoint<PointT, PointT> icp;
     icp.setInputSource(source_transformed);
     icp.setInputTarget(target);
-    icp.setMaxCorrespondenceDistance(5.0);
+    icp.setMaxCorrespondenceDistance(1.0);
     icp.setMaximumIterations(iterations);
     icp.setTransformationEpsilon(1e-4);
-    if (USE_SAMPLE) {
-        icp.setEuclideanFitnessEpsilon(2); //2
-        icp.setRANSACOutlierRejectionThreshold(0.2); //0.2
-    } else {
-        icp.setEuclideanFitnessEpsilon(0.2);
-    }
+    
+    icp.setEuclideanFitnessEpsilon(0.05); //2
+    icp.setRANSACOutlierRejectionThreshold(0.1); //0.2
+
 
     // Log các tham số ICP
     std::cout << "Max Correspondence Distance: " << icp.getMaxCorrespondenceDistance() << std::endl;
     std::cout << "Maximum Iterations: " << icp.getMaximumIterations() << std::endl;
     std::cout << "Transformation Epsilon: " << icp.getTransformationEpsilon() << std::endl;
     std::cout << "Euclidean Fitness Epsilon: " << icp.getEuclideanFitnessEpsilon() << std::endl;
+    std::cout << "RANSAC Outlier Rejection Threshold: 0.1" << std::endl;
 
 
     PointCloudT::Ptr cloud_icp(new PointCloudT);
@@ -334,11 +333,13 @@ int main(){
 
             new_scan = true;
             // TODO: (Filter scan using voxel filter)
-            
+            std::cout << "Number of points before voxel filter: " << scanCloud->points.size() << std::endl;
+            std::cout << "Voxel Grid Leaf Size: 0.2f" << std::endl;  // Hoặc giá trị mà bạn đang sử dụng
             pcl::VoxelGrid<PointT> voxelGrid;
             voxelGrid.setInputCloud(scanCloud);
-            voxelGrid.setLeafSize(0.5f, 0.5f, 0.5f);
+            voxelGrid.setLeafSize(0.2f, 0.2f, 0.2f);
             voxelGrid.filter(*cloudFiltered);
+            std::cout << "Number of points after voxel filter: " << cloudFiltered->points.size() << std::endl;
 
             // TODO: Find pose transform by using ICP or NDT matching
             //pose = ....
