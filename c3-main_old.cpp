@@ -96,6 +96,12 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
     pcl::console::TicToc time;
     time.tic();
 
+     // Log Pose khởi tạo
+    std::cout << "Initial Pose (startingPose): " << std::endl;
+    std::cout << "x: " << startingPose.position.x << " y: " << startingPose.position.y << " z: " << startingPose.position.z << std::endl;
+    std::cout << "yaw: " << startingPose.rotation.yaw << " pitch: " << startingPose.rotation.pitch << " roll: " << startingPose.rotation.roll << std::endl;
+
+
     Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity();
     Eigen::Matrix4d starting_pose_transform = transform3D(
         startingPose.rotation.yaw, startingPose.rotation.pitch, startingPose.rotation.roll,
@@ -117,6 +123,13 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
         icp.setEuclideanFitnessEpsilon(0.2);
     }
 
+    // Log các tham số ICP
+    std::cout << "Max Correspondence Distance: " << icp.getMaxCorrespondenceDistance() << std::endl;
+    std::cout << "Maximum Iterations: " << icp.getMaximumIterations() << std::endl;
+    std::cout << "Transformation Epsilon: " << icp.getTransformationEpsilon() << std::endl;
+    std::cout << "Euclidean Fitness Epsilon: " << icp.getEuclideanFitnessEpsilon() << std::endl;
+
+
     PointCloudT::Ptr cloud_icp(new PointCloudT);
     icp.align(*cloud_icp);
     std::cout << "Finished ICP alignment in " << time.toc() << " ms" << "\n";
@@ -125,9 +138,20 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
     if (icp.hasConverged()) {
         transformation_matrix = icp.getFinalTransformation().cast<double>();
         transformation_matrix = transformation_matrix * starting_pose_transform;
+
+        std::cout << "Transformation Matrix after ICP: " << std::endl;
+        std::cout << transformation_matrix << std::endl;
+
+        Pose finalPose = getPose(transformation_matrix);
+        std::cout << "Final Pose after ICP: " << std::endl;
+        std::cout << "x: " << finalPose.position.x << " y: " << finalPose.position.y << " z: " << finalPose.position.z << std::endl;
+        std::cout << "yaw: " << finalPose.rotation.yaw << " pitch: " << finalPose.rotation.pitch << " roll: " << finalPose.rotation.roll << std::endl;
+    
     } else {
         std::cout << "WARNING: ICP did not converge" << "\n";
     }
+
+    std::cout << "------- END OF ICP FUNC -------" << "\n";
     return transformation_matrix;
 }
 
@@ -322,8 +346,8 @@ int main(){
             Eigen::Matrix4d transformMatrix;
             int maxIteration = 50;
 
-            cout<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$d"<<endl;
-            pose.Print();
+            //cout<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$d"<<endl;
+            //pose.Print();
             if (USE_ICP) {
                 if (USE_SAMPLE)
                     maxIteration = 120;
@@ -334,7 +358,7 @@ int main(){
                 transformMatrix = NDT(ndt, cloudFiltered, pose, maxIteration);
             }
             pose = getPose(transformMatrix); // Cập nhật vị trí của xe
-            pose.Print();
+            //pose.Print();
             truePose.Print();
             cout<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$d"<<endl;
             // TODO: Transform scan so it aligns with ego's actual pose and render that scan
