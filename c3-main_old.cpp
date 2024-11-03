@@ -113,12 +113,12 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
     pcl::IterativeClosestPoint<PointT, PointT> icp;
     icp.setInputSource(source_transformed);
     icp.setInputTarget(target);
-    icp.setMaxCorrespondenceDistance(1.0);
+    icp.setMaxCorrespondenceDistance(2.0);
     icp.setMaximumIterations(iterations);
-    icp.setTransformationEpsilon(1e-4);
+    // icp.setTransformationEpsilon(1e-4);
     
-    icp.setEuclideanFitnessEpsilon(0.05); //2
-    icp.setRANSACOutlierRejectionThreshold(0.1); //0.2
+    // icp.setEuclideanFitnessEpsilon(0.05); //2
+    // icp.setRANSACOutlierRejectionThreshold(0.1); //0.2
 
 
     // Log các tham số ICP
@@ -335,10 +335,11 @@ int main(){
             new_scan = true;
             // TODO: (Filter scan using voxel filter)
             std::cout << "Number of points before voxel filter: " << scanCloud->points.size() << std::endl;
-            std::cout << "Voxel Grid Leaf Size: 0.2f" << std::endl;  // Hoặc giá trị mà bạn đang sử dụng
+            std::cout << "Voxel Grid Leaf Size: 1.0f" << std::endl;  // Hoặc giá trị mà bạn đang sử dụng
             pcl::VoxelGrid<PointT> voxelGrid;
             voxelGrid.setInputCloud(scanCloud);
-            voxelGrid.setLeafSize(0.2f, 0.2f, 0.2f);
+            double filterRes = 1.0f; //resoultion
+            voxelGrid.setLeafSize(filterRes, filterRes, filterRes);
             voxelGrid.filter(*cloudFiltered);
             std::cout << "Number of points after voxel filter: " << cloudFiltered->points.size() << std::endl;
             // Log số lượng điểm bị loại bỏ trong quá trình lọc
@@ -349,14 +350,14 @@ int main(){
             //pose = ....
             // Tính toán ma trận biến đổi giữa đám mây điểm đã lọc và bản đồ
             Eigen::Matrix4d transformMatrix;
-            int maxIteration = 120;
+            int maxIteration = 100;
 
             //cout<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$d"<<endl;
             //pose.Print();
             if (USE_ICP) {
                 if (USE_SAMPLE)
                     maxIteration = 120;
-                transformMatrix = ICP(mapCloud, cloudFiltered, truePose, maxIteration);
+                transformMatrix = ICP(mapCloud, cloudFiltered, pose, maxIteration);
             } else {
                 if (USE_SAMPLE)
                     maxIteration = 95;
