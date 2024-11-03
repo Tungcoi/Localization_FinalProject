@@ -134,12 +134,22 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
     std::cout << "Finished ICP alignment in " << time.toc() << " ms" << "\n";
     std::cout << "ICP converged: " << std::boolalpha << icp.hasConverged();
     std::cout << ", Fitness score: " << icp.getFitnessScore() << "\n";
+    // Log số lượng điểm bị loại bỏ bởi RANSAC (nếu có)
+    std::cout << "Number of inliers (points used in alignment): " << icp.getFinalTransformation().rows() << std::endl;
     if (icp.hasConverged()) {
         transformation_matrix = icp.getFinalTransformation().cast<double>();
         transformation_matrix = transformation_matrix * starting_pose_transform;
 
         std::cout << "Transformation Matrix after ICP: " << std::endl;
         std::cout << transformation_matrix << std::endl;
+
+        std::cout << "Number of points in source cloud: " << source->points.size() << std::endl;
+        std::cout << "Number of points in target cloud: " << target->points.size() << std::endl;
+
+        // Lấy số lượng điểm trùng khớp (correspondences)
+        std::vector<int> correspondences;
+        icp.getCorrespondences(correspondences);
+        std::cout << "Number of correspondences (matched points): " << correspondences.size() << std::endl;
 
         Pose finalPose = getPose(transformation_matrix);
         std::cout << "Final Pose after ICP: " << std::endl;
@@ -331,6 +341,9 @@ int main(){
             voxelGrid.setLeafSize(0.2f, 0.2f, 0.2f);
             voxelGrid.filter(*cloudFiltered);
             std::cout << "Number of points after voxel filter: " << cloudFiltered->points.size() << std::endl;
+            // Log số lượng điểm bị loại bỏ trong quá trình lọc
+            int removedPoints = scanCloud->points.size() - cloudFiltered->points.size();
+            std::cout << "Number of points removed by voxel filter: " << removedPoints << std::endl;
 
             // TODO: Find pose transform by using ICP or NDT matching
             //pose = ....
@@ -359,8 +372,10 @@ int main(){
             // Biến đổi và hiển thị đám mây điểm căn chỉnh
             PointCloudT::Ptr alignedCloud(new PointCloudT);
             pcl::transformPointCloud(*cloudFiltered, *alignedCloud, transformMatrix);
+            viewer->removePointCloud("aligned");
+            renderPointCloud(viewer, alignedCloud, "aligned", Color(1, 0, 0));
             viewer->removePointCloud("scan");
-            renderPointCloud(viewer, alignedCloud, "scan", Color(1, 0, 0));
+            renderPointCloud(viewer, scanCloud, "scan", Color(0, 1, 0));
 
             viewer->removeAllShapes();
             drawCar(pose, 1,  Color(0,1,0), 0.35, viewer);
