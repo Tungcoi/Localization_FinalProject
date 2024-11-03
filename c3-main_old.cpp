@@ -349,14 +349,14 @@ int main(){
             //pose = ....
             // Tính toán ma trận biến đổi giữa đám mây điểm đã lọc và bản đồ
             Eigen::Matrix4d transformMatrix;
-            int maxIteration = 50;
+            int maxIteration = 120;
 
             //cout<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$d"<<endl;
             //pose.Print();
             if (USE_ICP) {
                 if (USE_SAMPLE)
                     maxIteration = 120;
-                transformMatrix = ICP(mapCloud, cloudFiltered, pose, maxIteration);
+                transformMatrix = ICP(mapCloud, cloudFiltered, truePose, maxIteration);
             } else {
                 if (USE_SAMPLE)
                     maxIteration = 95;
