@@ -41,8 +41,9 @@ std::chrono::time_point<std::chrono::system_clock> currentTime;
 vector<ControlState> cs;
 
 bool refresh_view = false;
-const bool USE_ICP = true;
-const bool USE_SAMPLE = false;
+#define ICP_SELECTION = 1
+#define NDT_SELECTION = 2
+
 void keyboardEventOccurred(const pcl::visualization::KeyboardEvent &event, void* viewer)
 {
 
@@ -91,12 +92,12 @@ void Accuate(ControlState response, cc::Vehicle::Control& state){
 }
 
 
-// Hàm xử lý ICP
+// ICP Function
 Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose startingPose, int iterations) {
     pcl::console::TicToc time;
     time.tic();
 
-     // Log Pose khởi tạo
+     // Log Initial Pose
     std::cout << "Initial Pose (startingPose): " << std::endl;
     std::cout << "x: " << startingPose.position.x << " y: " << startingPose.position.y << " z: " << startingPose.position.z << std::endl;
     std::cout << "yaw: " << startingPose.rotation.yaw << " pitch: " << startingPose.rotation.pitch << " roll: " << startingPose.rotation.roll << std::endl;
@@ -121,7 +122,7 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
     // icp.setRANSACOutlierRejectionThreshold(0.1); //0.2
 
 
-    // Log các tham số ICP
+    // Log ICP parameters
     std::cout << "Max Correspondence Distance: " << icp.getMaxCorrespondenceDistance() << std::endl;
     std::cout << "Maximum Iterations: " << icp.getMaximumIterations() << std::endl;
     std::cout << "Transformation Epsilon: " << icp.getTransformationEpsilon() << std::endl;
@@ -134,7 +135,7 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
     std::cout << "Finished ICP alignment in " << time.toc() << " ms" << "\n";
     std::cout << "ICP converged: " << std::boolalpha << icp.hasConverged();
     std::cout << ", Fitness score: " << icp.getFitnessScore() << "\n";
-    // Log số lượng điểm bị loại bỏ bởi RANSAC (nếu có)
+    // Log Number of inliers by RANSAC (if have)
     std::cout << "Number of inliers (points used in alignment): " << icp.getFinalTransformation().rows() << std::endl;
     if (icp.hasConverged()) {
         transformation_matrix = icp.getFinalTransformation().cast<double>();
@@ -145,11 +146,6 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
 
         std::cout << "Number of points in source cloud: " << source->points.size() << std::endl;
         std::cout << "Number of points in target cloud: " << target->points.size() << std::endl;
-
-        // Lấy số lượng điểm trùng khớp (correspondences)
-        std::vector<int> correspondences;
-        icp.getCorrespondences(correspondences);
-        std::cout << "Number of correspondences (matched points): " << correspondences.size() << std::endl;
 
         Pose finalPose = getPose(transformation_matrix);
         std::cout << "Final Pose after ICP: " << std::endl;
@@ -164,7 +160,7 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
     return transformation_matrix;
 }
 
-// Hàm xử lý NDT
+// NDT Function
 Eigen::Matrix4d NDT(pcl::NormalDistributionsTransform<PointT, PointT>& ndt, PointCloudT::Ptr source, Pose startingPose, int iterations) {
     pcl::console::TicToc time;
     time.tic();
@@ -203,6 +199,15 @@ void drawCar(Pose pose, int num, Color color, double alpha, pcl::visualization::
 }
 
 int main(){
+
+    int selected_algo = ICP_SELECTION;
+    if(argc > 1)
+        selected_algo = (strcmp(argv[1], "2") == 0) ? ICP_SELECTION : NDT_SELECTION;
+
+    if (selected_algo == ICP_SELECTION)
+        std::cout<<"Using ICP algorithm"<<std::endl;
+    else
+        std::cout<<"Using NDT algorithm"<<std::endl;
 
     auto client = cc::Client("localhost", 2000);
     client.SetTimeout(2s);
@@ -250,10 +255,10 @@ int main(){
     typename pcl::PointCloud<PointT>::Ptr scanCloud (new pcl::PointCloud<PointT>);
 
     pcl::NormalDistributionsTransform<PointT, PointT> ndt;
-    if (USE_SAMPLE)
-        ndt.setTransformationEpsilon(1e-4);
-    else
-        ndt.setTransformationEpsilon(0.01);
+    
+    //init ndt
+    //ndt.setTransformationEpsilon(1e-4);
+    ndt.setTransformationEpsilon(0.01);
     ndt.setStepSize(0.1);
     ndt.setResolution(1.0);
     ndt.setInputTarget(mapCloud);
@@ -313,20 +318,20 @@ int main(){
 
         if(!new_scan){
 
-            // Tính toán độ chênh lệch ban đầu giữa pose khởi tạo và pose thực tế
+            // Calulate delta initial pose khởi tạo and actual pose
             double delta_x = pose.position.x - truePose.position.x;
             double delta_y = pose.position.y - truePose.position.y;
             double delta_z = pose.position.z - truePose.position.z;
 
-            // Tính khoảng cách Euclidean
+            // Calulate Euclidean distance
             double distance = sqrt(delta_x * delta_x + delta_y * delta_y + delta_z * delta_z);
 
-            // Tính sự chênh lệch về góc (yaw, pitch, roll)
+            // Calulate diff (yaw, pitch, roll)
             double delta_yaw = pose.rotation.yaw - truePose.rotation.yaw;
             double delta_pitch = pose.rotation.pitch - truePose.rotation.pitch;
             double delta_roll = pose.rotation.roll - truePose.rotation.roll;
 
-            // Log các giá trị này để xem độ chênh lệch ban đầu
+            // Log differs
             std::cout << "Initial pose vs Actual pose differences:" << std::endl;
             std::cout << "Position difference: (" << delta_x << ", " << delta_y << ", " << delta_z << "), Euclidean distance: " << distance << std::endl;
             std::cout << "Rotation difference: yaw = " << delta_yaw << ", pitch = " << delta_pitch << ", roll = " << delta_roll << std::endl;
@@ -335,42 +340,41 @@ int main(){
             new_scan = true;
             // TODO: (Filter scan using voxel filter)
             std::cout << "Number of points before voxel filter: " << scanCloud->points.size() << std::endl;
-            std::cout << "Voxel Grid Leaf Size: 1.0f" << std::endl;  // Hoặc giá trị mà bạn đang sử dụng
+            
             pcl::VoxelGrid<PointT> voxelGrid;
             voxelGrid.setInputCloud(scanCloud);
             double filterRes = 1.0f; //resoultion
+            std::cout << "Voxel Grid Leaf Size: " << filterRes << std::endl;
             voxelGrid.setLeafSize(filterRes, filterRes, filterRes);
             voxelGrid.filter(*cloudFiltered);
             std::cout << "Number of points after voxel filter: " << cloudFiltered->points.size() << std::endl;
-            // Log số lượng điểm bị loại bỏ trong quá trình lọc
+            // Number of points removed by voxel filter
             int removedPoints = scanCloud->points.size() - cloudFiltered->points.size();
             std::cout << "Number of points removed by voxel filter: " << removedPoints << std::endl;
 
             // TODO: Find pose transform by using ICP or NDT matching
             //pose = ....
-            // Tính toán ma trận biến đổi giữa đám mây điểm đã lọc và bản đồ
+            // calculate transformMatrix between cloudFiltered and mapCloud
             Eigen::Matrix4d transformMatrix;
             int maxIteration = 100;
 
             //cout<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$d"<<endl;
             //pose.Print();
-            if (USE_ICP) {
-                if (USE_SAMPLE)
-                    maxIteration = 120;
+            if (selected_algo == ICP_SELECTION) {
+                maxIteration = 120;
                 transformMatrix = ICP(mapCloud, cloudFiltered, pose, maxIteration);
             } else {
-                if (USE_SAMPLE)
-                    maxIteration = 95;
+                maxIteration = 95;
                 transformMatrix = NDT(ndt, cloudFiltered, pose, maxIteration);
             }
-            pose = getPose(transformMatrix); // Cập nhật vị trí của xe
+            pose = getPose(transformMatrix); // updae vehicle position
             //pose.Print();
             truePose.Print();
             cout<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$d"<<endl;
             // TODO: Transform scan so it aligns with ego's actual pose and render that scan
 
             // TODO: Change `scanCloud` below to your transformed scan
-            // Biến đổi và hiển thị đám mây điểm căn chỉnh
+            // Transform and render alignedCloud
             PointCloudT::Ptr alignedCloud(new PointCloudT);
             pcl::transformPointCloud(*cloudFiltered, *alignedCloud, transformMatrix);
             viewer->removePointCloud("aligned");

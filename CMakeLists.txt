@@ -11,7 +11,7 @@ add_definitions(-std=c++14 -O3)
 set(CXX_FLAGS "-pthread -fPIC -DNDEBUG -Wextra")
 set(CMAKE_CXX_FLAGS "${CXX_FLAGS} -Wl,-Bstatic -lboost_filesystem -Wl,-Bdynamic")
 
-set(sources c3-main_au.cpp helper.cpp)
+set(sources c3-main.cpp helper.cpp)
 #set(sources c3-main-1.cpp helper1.cpp scm.cpp ukf.cpp)
 
 set(CARLALIB_DIR ${CMAKE_SOURCE_DIR}/libcarla-install/lib)

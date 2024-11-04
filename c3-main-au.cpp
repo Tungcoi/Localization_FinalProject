@@ -113,7 +113,7 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
 
     // Calculate initial transformation based on the starting pose
     Eigen::Matrix4d initTransf = transform3D(startingPose.rotation.yaw, startingPose.rotation.pitch, startingPose.rotation.roll, 
-                                            startingPose.position.x, startingPose.position.y, startingPose.position.z).cast<float>();
+                                            startingPose.position.x, startingPose.position.y, startingPose.position.z);
 
     // Apply the initial transformation to the source point cloud
     // PointCloudT::Ptr transformSource(new PointCloudT);
@@ -176,7 +176,7 @@ Eigen::Matrix4d NDT(PointCloudT::Ptr mapCloud, PointCloudT::Ptr source, Pose sta
     Eigen::Matrix4d transf_matrix = Eigen::Matrix4d::Identity();
 	// Calculate initial transformation based on the starting pose
     Eigen::Matrix4d initTransf = transform3D(startingPose.rotation.yaw, startingPose.rotation.pitch, startingPose.rotation.roll, 
-                                            startingPose.position.x, startingPose.position.y, startingPose.position.z).cast<float>();
+                                            startingPose.position.x, startingPose.position.y, startingPose.position.z);
 
 	// Apply the initial transformation to the source point cloud
 	PointCloudT::Ptr transformSource(new PointCloudT);
