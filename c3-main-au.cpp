@@ -32,6 +32,7 @@ using namespace std;
 #include <chrono> 
 #include <ctime> 
 #include <pcl/registration/icp.h>
+#include <pcl/registration/gicp.h>
 #include <pcl/registration/ndt.h>
 #include <pcl/console/time.h>   // TicToc
 
@@ -153,7 +154,7 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
     {
         // Get the final transformation matrix
 		std::cout << "\nICP took " << time.toc() << " ms" << std::endl;
-		std::cout << "\nICP score : " << icp.getFitnessScore() << std::endl;
+		std::cout << "\nICP score : " << icpDetection.getFitnessScore() << std::endl;
         // Get the final transformation matrix and combine it with the initial transform
         transf_matrix = icpDetection.getFinalTransformation().cast<double>();
         //transf_matrix = transf_matrix * initTransf;
@@ -211,10 +212,10 @@ Eigen::Matrix4d NDT(PointCloudT::Ptr mapCloud, PointCloudT::Ptr source, Pose sta
 	{
 		// Print the convergence result and score
 		std::cout << "\nNDT took " << time.toc() << " ms" << std::endl;
-		std:cout<<"\nNDT score : " << ndt.getFitnessScore() << std::endl;
+		std:cout<<"\nNDT score : " << ndtDetection.getFitnessScore() << std::endl;
 
 		// Get the final transformation matrix
-		Eigen::Matrix4d final_transf = ndt.getFinalTransformation().cast<double>();
+		Eigen::Matrix4d final_transf = ndtDetection.getFinalTransformation().cast<double>();
 		// Return the final transformation matrix
 		return final_transf;
 	}
@@ -222,6 +223,7 @@ Eigen::Matrix4d NDT(PointCloudT::Ptr mapCloud, PointCloudT::Ptr source, Pose sta
 	// If NDT has not converged, display an error message
 	std::cerr << "\nNDT did not converge" << std::endl;
 	// Return the final transformation matrix
+	Eigen::Matrix4d final_transf = Eigen::Matrix4d::Identity();
     return final_transf;
 }
 //using int argc, char *argv[] in main
