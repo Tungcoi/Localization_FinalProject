@@ -41,8 +41,8 @@ std::chrono::time_point<std::chrono::system_clock> currentTime;
 vector<ControlState> cs;
 
 bool refresh_view = false;
-#define ICP_SELECTION = 1
-#define NDT_SELECTION = 2
+#define ICP_SELECTION  1
+#define NDT_SELECTION  2
 
 void keyboardEventOccurred(const pcl::visualization::KeyboardEvent &event, void* viewer)
 {
@@ -198,8 +198,8 @@ void drawCar(Pose pose, int num, Color color, double alpha, pcl::visualization::
     renderBox(viewer, box, num, color, alpha);
 }
 
-int main(){
-
+int main(int argc, char *argv[])
+{
     int selected_algo = ICP_SELECTION;
     if(argc > 1)
         selected_algo = (strcmp(argv[1], "2") == 0) ? ICP_SELECTION : NDT_SELECTION;
