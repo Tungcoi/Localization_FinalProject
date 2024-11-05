@@ -97,12 +97,6 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
     pcl::console::TicToc time;
     time.tic();
 
-     // Log Initial Pose
-    std::cout << "Initial Pose (startingPose): " << std::endl;
-    std::cout << "x: " << startingPose.position.x << " y: " << startingPose.position.y << " z: " << startingPose.position.z << std::endl;
-    std::cout << "yaw: " << startingPose.rotation.yaw << " pitch: " << startingPose.rotation.pitch << " roll: " << startingPose.rotation.roll << std::endl;
-
-
     Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity();
     Eigen::Matrix4d starting_pose_transform = transform3D(
         startingPose.rotation.yaw, startingPose.rotation.pitch, startingPose.rotation.roll,
@@ -116,19 +110,10 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
     icp.setInputTarget(target);
     icp.setMaxCorrespondenceDistance(2.0);
     icp.setMaximumIterations(iterations);
-    // icp.setTransformationEpsilon(1e-4);
+    icp.setTransformationEpsilon(1e-4);
     
     // icp.setEuclideanFitnessEpsilon(0.05); //2
     // icp.setRANSACOutlierRejectionThreshold(0.1); //0.2
-
-
-    // Log ICP parameters
-    std::cout << "Max Correspondence Distance: " << icp.getMaxCorrespondenceDistance() << std::endl;
-    std::cout << "Maximum Iterations: " << icp.getMaximumIterations() << std::endl;
-    std::cout << "Transformation Epsilon: " << icp.getTransformationEpsilon() << std::endl;
-    std::cout << "Euclidean Fitness Epsilon: " << icp.getEuclideanFitnessEpsilon() << std::endl;
-    std::cout << "RANSAC Outlier Rejection Threshold: 0.1" << std::endl;
-
 
     PointCloudT::Ptr cloud_icp(new PointCloudT);
     icp.align(*cloud_icp);
@@ -140,17 +125,6 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
     if (icp.hasConverged()) {
         transformation_matrix = icp.getFinalTransformation().cast<double>();
         transformation_matrix = transformation_matrix * starting_pose_transform;
-
-        std::cout << "Transformation Matrix after ICP: " << std::endl;
-        std::cout << transformation_matrix << std::endl;
-
-        std::cout << "Number of points in source cloud: " << source->points.size() << std::endl;
-        std::cout << "Number of points in target cloud: " << target->points.size() << std::endl;
-
-        Pose finalPose = getPose(transformation_matrix);
-        std::cout << "Final Pose after ICP: " << std::endl;
-        std::cout << "x: " << finalPose.position.x << " y: " << finalPose.position.y << " z: " << finalPose.position.z << std::endl;
-        std::cout << "yaw: " << finalPose.rotation.yaw << " pitch: " << finalPose.rotation.pitch << " roll: " << finalPose.rotation.roll << std::endl;
     
     } else {
         std::cout << "WARNING: ICP did not converge" << "\n";
@@ -243,8 +217,6 @@ int main(int argc, char *argv[])
 
     auto vehicle = boost::static_pointer_cast<cc::Vehicle>(ego_actor);
     Pose pose(Point(0,0,0), Rotate(0,0,0));
-    //Pose pose(Point(vehicle->GetTransform().location.x, vehicle->GetTransform().location.y, vehicle->GetTransform().location.z), Rotate(vehicle->GetTransform().rotation.yaw * pi/180, vehicle->GetTransform().rotation.pitch * pi/180, vehicle->GetTransform().rotation.roll * pi/180));
-
     // Load map
     PointCloudT::Ptr mapCloud(new PointCloudT);
       pcl::io::loadPCDFile("map.pcd", *mapCloud);
@@ -257,7 +229,6 @@ int main(int argc, char *argv[])
     pcl::NormalDistributionsTransform<PointT, PointT> ndt;
     
     //init ndt
-    //ndt.setTransformationEpsilon(1e-4);
     ndt.setTransformationEpsilon(0.01);
     ndt.setStepSize(0.1);
     ndt.setResolution(1.0);
@@ -317,40 +288,13 @@ int main(int argc, char *argv[])
           viewer->spinOnce();
 
         if(!new_scan){
-
-            // Calulate delta initial pose khởi tạo and actual pose
-            double delta_x = pose.position.x - truePose.position.x;
-            double delta_y = pose.position.y - truePose.position.y;
-            double delta_z = pose.position.z - truePose.position.z;
-
-            // Calulate Euclidean distance
-            double distance = sqrt(delta_x * delta_x + delta_y * delta_y + delta_z * delta_z);
-
-            // Calulate diff (yaw, pitch, roll)
-            double delta_yaw = pose.rotation.yaw - truePose.rotation.yaw;
-            double delta_pitch = pose.rotation.pitch - truePose.rotation.pitch;
-            double delta_roll = pose.rotation.roll - truePose.rotation.roll;
-
-            // Log differs
-            std::cout << "Initial pose vs Actual pose differences:" << std::endl;
-            std::cout << "Position difference: (" << delta_x << ", " << delta_y << ", " << delta_z << "), Euclidean distance: " << distance << std::endl;
-            std::cout << "Rotation difference: yaw = " << delta_yaw << ", pitch = " << delta_pitch << ", roll = " << delta_roll << std::endl;
-            
-            
             new_scan = true;
             // TODO: (Filter scan using voxel filter)
-            std::cout << "Number of points before voxel filter: " << scanCloud->points.size() << std::endl;
-            
             pcl::VoxelGrid<PointT> voxelGrid;
             voxelGrid.setInputCloud(scanCloud);
-            double filterRes = 1.0f; //resoultion
-            std::cout << "Voxel Grid Leaf Size: " << filterRes << std::endl;
+            double filterRes = 5.0f; //resoultion
             voxelGrid.setLeafSize(filterRes, filterRes, filterRes);
             voxelGrid.filter(*cloudFiltered);
-            std::cout << "Number of points after voxel filter: " << cloudFiltered->points.size() << std::endl;
-            // Number of points removed by voxel filter
-            int removedPoints = scanCloud->points.size() - cloudFiltered->points.size();
-            std::cout << "Number of points removed by voxel filter: " << removedPoints << std::endl;
 
             // TODO: Find pose transform by using ICP or NDT matching
             //pose = ....
@@ -359,9 +303,7 @@ int main(int argc, char *argv[])
 
             Eigen::Matrix4d transformMatrix;
             int maxIteration = 100;
-
-            //cout<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$d"<<endl;
-            //pose.Print();
+         
             if (selected_algo == ICP_SELECTION) {
                 maxIteration = 120;
                 transformMatrix = ICP(mapCloud, cloudFiltered, pose, maxIteration);
@@ -369,20 +311,15 @@ int main(int argc, char *argv[])
                 maxIteration = 95;
                 transformMatrix = NDT(ndt, cloudFiltered, pose, maxIteration);
             }
-            pose = getPose(transformMatrix); // updae vehicle position
-            //pose.Print();
-            truePose.Print();
-            cout<<"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$d"<<endl;
+           
             // TODO: Transform scan so it aligns with ego's actual pose and render that scan
-
+            pose = getPose(transformMatrix); // updae vehicle position
             // TODO: Change `scanCloud` below to your transformed scan
             // Transform and render alignedCloud
             PointCloudT::Ptr alignedCloud(new PointCloudT);
             pcl::transformPointCloud(*cloudFiltered, *alignedCloud, transformMatrix);
             viewer->removePointCloud("aligned");
             renderPointCloud(viewer, alignedCloud, "aligned", Color(1, 0, 0));
-            viewer->removePointCloud("scan");
-            renderPointCloud(viewer, scanCloud, "scan", Color(0, 1, 0));
 
             viewer->removeAllShapes();
             drawCar(pose, 1,  Color(0,1,0), 0.35, viewer);
