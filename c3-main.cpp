@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
 {
     int selected_algo = ICP_SELECTION;
     if(argc > 1)
-        selected_algo = (strcmp(argv[1], "2") == 0) ? ICP_SELECTION : NDT_SELECTION;
+        selected_algo = (strcmp(argv[1], "2") == 0) ? NDT_SELECTION : ICP_SELECTION;
 
     if (selected_algo == ICP_SELECTION)
         std::cout<<"Using ICP algorithm"<<std::endl;
