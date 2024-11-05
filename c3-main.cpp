@@ -355,6 +355,8 @@ int main(int argc, char *argv[])
             // TODO: Find pose transform by using ICP or NDT matching
             //pose = ....
             // calculate transformMatrix between cloudFiltered and mapCloud
+            pose = Pose(Point(vehicle->GetTransform().location.x, vehicle->GetTransform().location.y, vehicle->GetTransform().location.z), Rotate(vehicle->GetTransform().rotation.yaw * pi/180, vehicle->GetTransform().rotation.pitch * pi/180, vehicle->GetTransform().rotation.roll * pi/180)) - poseRef;
+
             Eigen::Matrix4d transformMatrix;
             int maxIteration = 100;
 
