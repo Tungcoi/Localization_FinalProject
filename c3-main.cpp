@@ -94,9 +94,6 @@ void Accuate(ControlState response, cc::Vehicle::Control& state){
 
 // ICP Function
 Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose startingPose, int iterations) {
-    pcl::console::TicToc time;
-    time.tic();
-
     Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity();
     Eigen::Matrix4d starting_pose_transform = transform3D(
         startingPose.rotation.yaw, startingPose.rotation.pitch, startingPose.rotation.roll,
@@ -116,9 +113,6 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
 
     PointCloudT::Ptr cloud_icp(new PointCloudT);
     icp.align(*cloud_icp);
-    std::cout << "Finished ICP alignment in " << time.toc() << " ms" << "\n";
-    std::cout << "ICP converged: " << std::boolalpha << icp.hasConverged();
-    std::cout << ", Fitness score: " << icp.getFitnessScore() << "\n";
     if (icp.hasConverged()) {
         transformation_matrix = icp.getFinalTransformation().cast<double>();
         transformation_matrix = transformation_matrix * starting_pose_transform;
@@ -126,16 +120,11 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
     } else {
         std::cout << "WARNING: ICP did not converge" << "\n";
     }
-
-    std::cout << "------- END OF ICP FUNC -------" << "\n";
     return transformation_matrix;
 }
 
 // NDT Function
 Eigen::Matrix4d NDT(pcl::NormalDistributionsTransform<PointT, PointT>& ndt, PointCloudT::Ptr source, Pose startingPose, int iterations) {
-    pcl::console::TicToc time;
-    time.tic();
-
     Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity();
     Eigen::Matrix4f init_guess = transform3D(
         startingPose.rotation.yaw, startingPose.rotation.pitch, startingPose.rotation.roll,
@@ -147,9 +136,6 @@ Eigen::Matrix4d NDT(pcl::NormalDistributionsTransform<PointT, PointT>& ndt, Poin
     PointCloudT::Ptr output_cloud(new PointCloudT);
     ndt.align(*output_cloud, init_guess);
 
-    std::cout << "Finished NDT alignment in " << time.toc() << " ms" << "\n";
-    std::cout << "NDT converged: " << std::boolalpha << ndt.hasConverged();
-    std::cout << ", Fitness score: " << ndt.getFitnessScore() << "\n";
     if (ndt.hasConverged()) {
         transformation_matrix = ndt.getFinalTransformation().cast<double>();
     } else {
