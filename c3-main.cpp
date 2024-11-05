@@ -108,20 +108,17 @@ Eigen::Matrix4d ICP(PointCloudT::Ptr target, PointCloudT::Ptr source, Pose start
     pcl::IterativeClosestPoint<PointT, PointT> icp;
     icp.setInputSource(source_transformed);
     icp.setInputTarget(target);
-    icp.setMaxCorrespondenceDistance(2.0);
+    icp.setMaxCorrespondenceDistance(5.0);
     icp.setMaximumIterations(iterations);
-    icp.setTransformationEpsilon(1e-4);
-    
-    // icp.setEuclideanFitnessEpsilon(0.05); //2
-    // icp.setRANSACOutlierRejectionThreshold(0.1); //0.2
+    icp.setTransformationEpsilon(1e-4); 
+    icp.setEuclideanFitnessEpsilon(2);
+    icp.setRANSACOutlierRejectionThreshold(0.2); 
 
     PointCloudT::Ptr cloud_icp(new PointCloudT);
     icp.align(*cloud_icp);
     std::cout << "Finished ICP alignment in " << time.toc() << " ms" << "\n";
     std::cout << "ICP converged: " << std::boolalpha << icp.hasConverged();
     std::cout << ", Fitness score: " << icp.getFitnessScore() << "\n";
-    // Log Number of inliers by RANSAC (if have)
-    std::cout << "Number of inliers (points used in alignment): " << icp.getFinalTransformation().rows() << std::endl;
     if (icp.hasConverged()) {
         transformation_matrix = icp.getFinalTransformation().cast<double>();
         transformation_matrix = transformation_matrix * starting_pose_transform;
